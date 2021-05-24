@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Post;
 
@@ -40,7 +42,29 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'titolo' => 'required|max:255',
+            'contenuto' => 'required'
+        ]);
+        $form_data = $request->all();
+        $new_post = new Post ();
+        $new_post->fill($form_data);
+        $slug = Str::slug($new_post->titolo);
+        $slug_base = $slug;
+
+        $post_esiste = Post::where('slug', $slug)->first();
+        $cont = 1;
+        while($post_esiste) {
+            $slug = $slug_base . '-' . $cont;
+            $cont++;
+            $post_esiste = Post::where('slug', $slug)->first();
+        }
+
+        $new_post->slug = $slug;
+        $new_post->user_id = Auth::id();
+        $new_post->save();
+
+        return redirect()->route('posts.index');
     }
 
     /**
@@ -51,7 +75,14 @@ class PostController extends Controller
      */
     public function show($id)
     {
-        //
+        if($id) {
+            $post = Post::find($id);
+            $data = [
+                'post' => $post
+            ];
+            return view('posts.show', $data);
+        }
+        abort(404);
     }
 
     /**
@@ -60,9 +91,17 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Post $post)
     {
-        //
+        if (!$post) {
+            abort(404);
+        }
+
+        $data = [
+            'post' => $post
+        ];
+
+        return view('posts.edit', $data);
     }
 
     /**
@@ -83,8 +122,9 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Post $post)
     {
-        //
+        $post->delete();
+        return redirect()->route('posts.index');
     }
 }
