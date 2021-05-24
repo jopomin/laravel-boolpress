@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', 'HomeController@index')->name('guest-home');
-Route::get('/posts', 'PostController@index')->name('posts.index');
-Route::get('/posts/{slug}', 'PostController@show')->name('posts.show');
+Route::get('/', 'HomeController@index')->name('guest.home');
+Route::get('/posts', 'PostController@index')->name('guest.posts.index');
+Route::get('/posts/{slug}', 'PostController@show')->name('guest.posts.show');
 
 Auth::routes();
 
@@ -24,5 +24,6 @@ Route::prefix('admin')
     ->middleware('auth')
     ->group(function () {
         Route::get('/', 'HomeController@index')->middleware('auth')->name('admin-home');
+        Route::resource('/posts', 'PostController');
     });
 
