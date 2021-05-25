@@ -13,13 +13,12 @@ class AddForeignKeyUserPostsTable extends Migration
      */
     public function up()
     {
-        Schema::table('posts', function (Blueprint $table)
-        {
+        Schema::table('posts', function (Blueprint $table) {
+
         $table->unsignedBigInteger('user_id');
-        
         $table->foreign('user_id')
-        ->references('id')
-        ->on('users');
+               ->references('id')
+               ->on('users');
         });
     }
 
@@ -30,10 +29,11 @@ class AddForeignKeyUserPostsTable extends Migration
      */
     public function down()
     {
-        Schema::table('posts', function (Blueprint $table)
-        {
-        $table->dropForeign('posts_user_id_foreign');
-        $table->dropColumn('user_id');
-        });
+        Schema::table('posts', function (Blueprint $table) {
+
+            $table->dropForeign('posts_user_id_foreign');
+            $table->dropColumn('user_id');
+
+            });
     }
 }
