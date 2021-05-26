@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Post;
+use App\Category;
+use App\Tag;
 
 class PostController extends Controller
 {
@@ -31,7 +33,10 @@ class PostController extends Controller
      */
     public function create()
     {
-       return view('admin.posts.create');
+       $data = [
+           'tags' => Tag::all()
+       ];
+       return view('admin.posts.create', $data);
     }
 
     /**
@@ -62,9 +67,14 @@ class PostController extends Controller
 
         $new_post->slug = $slug;
         $new_post->user_id = Auth::id();
+
         $new_post->save();
 
-        return redirect()->route('posts.index');
+        if (array_key_exists('tags', $form_data)) {
+            $new_post->tags()->sync($form_data['tags']);
+        }
+
+        return redirect()->route('admin.posts.index');
     }
 
     /**
@@ -80,7 +90,7 @@ class PostController extends Controller
             $data = [
                 'post' => $post
             ];
-            return view('posts.show', $data);
+            return view('admin.posts.show', $data);
         }
         abort(404);
     }
@@ -98,10 +108,12 @@ class PostController extends Controller
         }
 
         $data = [
-            'post' => $post
+            'post' => $post,
+            'tags' => Tag::all(),
+            'categories' => Category::all()
         ];
 
-        return view('posts.edit', $data);
+        return view('admin.posts.edit', $data);
     }
 
     /**
@@ -111,9 +123,41 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Post $post)
     {
-        //
+        $request->validate([
+            'titolo' => 'required|max:255',
+            'contenuto' => 'required'
+        ]);
+
+        $form_data = $request->all();
+
+        if($form_data['titolo'] != $post->titolo) {
+            $slug = Str::slug($form_data->titolo);
+            $slug_base = $slug;
+            $post_esiste = Post::where('slug', $slug)->first();
+            $cont = 1;
+            while($post_esiste) {
+                $slug = $slug_base . '-' . $cont;
+                $cont++;
+                $post_esiste = Post::where('slug', $slug)->first();
+            }
+
+            $form_data['slug'] = $slug;
+
+        }
+
+        $post->update($form_data);
+
+        if (array_key_exists('tags', $form_data)) {
+            $post->tags()->sync($form_data['tags']);
+        }
+
+        else {
+            $post->tags()->sync([]); 
+        }
+
+        return redirect()->route('admin.posts.index');
     }
 
     /**
@@ -124,7 +168,8 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
+        $post->tags()->sync([]);
         $post->delete();
-        return redirect()->route('posts.index');
+        return redirect()->route('admin.posts.index');
     }
 }
